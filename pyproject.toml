@@ -1,0 +1,23 @@
+[project]
+name = "dl-history"
+version = "0.1.0"
+description = "Implementing neural network history from manual backprop to ResNet"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "matplotlib>=3.8",
+    "jupyter>=1.0",
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.7", "wheel"]
+build-backend = "uv_build"
+
+[tool.uv_build]
+module-name = "dl_history"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,16 @@
+# OS / editor noise
+.DS_Store
+
+# Python artifacts
+__pycache__/
+*.pyc
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Datasets (re-downloadable via torchvision download=True)
+data/
+
+# uv
+# (uv.lock is committed intentionally)

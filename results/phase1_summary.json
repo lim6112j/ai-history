@@ -1,0 +1,26 @@
+{
+  "expA_final_val_acc": {
+    "3-layer": 0.8578,
+    "5-layer": 0.8157,
+    "10-layer": 0.1
+  },
+  "expA_grad_norm_layer1_vs_last": {
+    "3-layer": {
+      "layer1": 0.37447143734350813,
+      "last": 0.28604713918827623
+    },
+    "5-layer": {
+      "layer1": 0.3778233863986967,
+      "last": 0.4076844521467607
+    },
+    "10-layer": {
+      "layer1": 9.934122963332318e-06,
+      "last": 0.44863633247091284
+    }
+  },
+  "expB_final_val_acc": {
+    "sigmoid": 0.1,
+    "relu": 0.8758
+  },
+  "expC_final_val_acc": 0.8769
+}
