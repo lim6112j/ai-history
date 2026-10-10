@@ -11,6 +11,11 @@ IMAGE_SIZE = 28
 NUM_CLASSES = 10
 INPUT_DIM = IMAGE_SIZE * IMAGE_SIZE  # 784
 
+# Full-train-set statistics; zero-centered inputs keep sigmoid/tanh nets
+# stable at practical learning rates (same standardization as Phase 1).
+FASHION_MEAN = 0.2860
+FASHION_STD = 0.3530
+
 _FASHION_CLASSES = (
     "T-shirt/top",
     "Trouser",
@@ -57,12 +62,18 @@ def load_fashion_mnist_loaders(
 
     Returns:
         (train_loader, test_loader) yielding float32 images shaped
-        (N, 1, 28, 28) in [0, 1] and int64 labels.
+        (N, 1, 28, 28), standardized with full-train-set statistics, and
+        int64 labels.
     """
     import torchvision
     from torchvision import transforms
 
-    transform = transforms.ToTensor()
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((FASHION_MEAN,), (FASHION_STD,)),
+        ]
+    )
     train_set = torchvision.datasets.FashionMNIST(
         root=DATA_ROOT, train=True, download=True, transform=transform
     )

@@ -11,7 +11,7 @@
 | Phase | 시대 | 모델 | 핵심 아이디어 | 상태 |
 |-------|------|------|--------------|------|
 | 1 | 1980s~ | NumPy MLP + 수동 역전파 | Chain rule, Vanishing Gradient | ✅ 구현 |
-| 2 | 1998 | LeNet-5 | Convolution, Pooling, 공간 구조 보존 | ⬜ |
+| 2 | 1998 | LeNet-5 | Convolution, Pooling, 공간 구조 보존 | ✅ 구현 |
 | 3 | 2012 | AlexNet | ReLU, Dropout, GPU 학습 | ⬜ |
 | 4 | 2014 | VGG-11/16 | 3×3 커널 중첩, BatchNorm | ⬜ |
 | 5 | 2015 | ResNet-18/50 | Skip Connection, Degradation 해결 | ⬜ |
@@ -26,7 +26,7 @@ src/dl_history/
 ├── viz.py           # loss/acc 곡선, gradient norm plot
 └── models/
     ├── mlp_numpy.py # Phase 1: 순수 NumPy MLP + 수동 역전파
-    ├── lenet5.py    # Phase 2 (스텁)
+    ├── lenet5.py    # Phase 2: LeNet-5
     ├── alexnet.py   # Phase 3 (스텁)
     ├── vgg.py       # Phase 4 (스텁)
     └── resnet.py    # Phase 5 (스텁)
@@ -39,8 +39,9 @@ results/             # 곡선 PNG + metric JSON
 
 ```bash
 uv sync                                      # 의존성 설치
-uv run pytest                                # gradient check 유닛테스트
+uv run python -m pytest                       # gradient check 유닛테스트
 uv run python scripts/run_phase1.py          # Phase 1 실험 → results/*.png
+uv run python scripts/run_phase2.py          # Phase 2 실험 → results/*.png
 uv run jupyter lab notebooks/                # 노트북 열기
 ```
 
@@ -50,6 +51,14 @@ uv run jupyter lab notebooks/                # 노트북 열기
   gradient norm이 0으로 수렴 (Vanishing Gradient)
 - **Exp B**: 동일 10층에서 Sigmoid(Xavier) vs ReLU(He) — ReLU가 수렴 속도에서 압도
 - **Exp C**: 2층 baseline — 약 88% 검증 정확도
+
+## Phase 2 실험 요약
+
+- **Exp A**: 동일 LeNet-5에서 Sigmoid / Tanh / ReLU — Sigmoid는 학습 초반
+  plateau를 매우 늦게 탈출하고, Tanh·ReLU가 수렴 속도에서 우위
+- **Exp B**: LeNet-5(~62k 파라미터) vs flat MLP 784-128-10(~102k 파라미터) —
+  파라미터가 더 적은데도 Convolution의 공간 구조 보존으로 더 높은 정확도
+- 데이터 표준화(전체 train 통계)는 Phase 1과 동일하게 `data.py`의 loader에 적용
 
 ---
 
@@ -138,7 +147,7 @@ uv run jupyter lab notebooks/                # 노트북 열기
 [Phase 1] NumPy MLP & Manual Backprop        ✅ 구현 완료 (2026-10-07)
    └── Sigmoid의 한계 및 Vanishing Gradient 체감
 
-[Phase 2] LeNet-5 (1998)
+[Phase 2] LeNet-5 (1998)                          ✅ 구현 완료 (2026-10-10)
    └── Spatial Feature 추출과 ReLU/Pooling의 효과
 
 [Phase 3] AlexNet (2012)
