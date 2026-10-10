@@ -13,19 +13,25 @@ from matplotlib.ticker import FuncFormatter
 
 from .metrics import EpochHistory, GradientHistory
 
-# Korean-capable fonts first (macOS/Windows); matplotlib falls back silently
-# when a font is missing, so this is safe on any platform.
-plt.rcParams["font.family"] = ["Apple SD Gothic Neo", "Malgun Gothic", "DejaVu Sans"]
+# Korean-capable fonts first (macOS/Windows). matplotlib 3.11 logs a
+# "findfont: Font family ... not found" warning for every missing entry in the
+# list even when an earlier one resolves, so keep only installed fonts.
+_KOREAN_FONTS = ["Apple SD Gothic Neo", "Malgun Gothic", "DejaVu Sans"]
+_INSTALLED_FONTS = {font.name for font in matplotlib.font_manager.fontManager.ttflist}
+plt.rcParams["font.family"] = [name for name in _KOREAN_FONTS if name in _INSTALLED_FONTS]
 plt.rcParams["axes.unicode_minus"] = False
 
 # Plain-text log ticks ("1e-1"): mathtext exponents render as tofu when the
-# active CJK font lacks superscript glyphs.
+# active CJK font lacks superscript glyphs. Applied to minor ticks too —
+# their default mathtext (U+2212 minus) has no glyphs either, and on a
+# sub-decade range the minor ticks are the only labels below the top decade.
 LOG_TICKS = FuncFormatter(lambda value, _: f"{value:g}")
 
 
 def _apply_log_ticks(ax) -> None:
     ax.set_yscale("log")
     ax.yaxis.set_major_formatter(LOG_TICKS)
+    ax.yaxis.set_minor_formatter(LOG_TICKS)
 
 RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
 
