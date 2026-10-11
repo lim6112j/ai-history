@@ -80,6 +80,28 @@ def plot_accuracy_curves(histories: dict[str, EpochHistory], title: str, filenam
     return out
 
 
+def plot_generalization_gap(histories: dict[str, EpochHistory], title: str, filename: str) -> Path:
+    """Plot the train−val accuracy gap per epoch — the overfitting signature.
+
+    A rising gap means the model is memorizing the training set; Dropout and
+    augmentation are expected to hold it down.
+    """
+    fig, ax = plt.subplots(figsize=FIG_SIZE)
+    for label, hist in histories.items():
+        gap = [train - val for train, val in zip(hist.train_acc, hist.val_acc)]
+        ax.plot(gap, marker="o", markersize=4, label=label)
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Train − val accuracy")
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    out = _ensure_results_dir() / filename
+    fig.savefig(out, dpi=DPI)
+    plt.close(fig)
+    return out
+
+
 def plot_gradient_norms(
     gradient_histories: dict[str, GradientHistory],
     layer_labels: dict[str, list[str]],

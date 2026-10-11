@@ -12,8 +12,8 @@
 |-------|------|------|--------------|------|
 | 1 | 1980s~ | NumPy MLP + 수동 역전파 | Chain rule, Vanishing Gradient | ✅ 구현 |
 | 2 | 1998 | LeNet-5 | Convolution, Pooling, 공간 구조 보존 | ✅ 구현 |
-| 3 | 2012 | AlexNet | ReLU, Dropout, GPU 학습 | ⬜ |
-| 4 | 2014 | VGG-11/16 | 3×3 커널 중첩, BatchNorm | ⬜ |
+| 3 | 2012 | AlexNet | ReLU, Dropout, GPU 학습 | ✅ 구현 |
+| 4 | 2014 | VGG-11/16 | 3×3 커널 중첩, BatchNorm | ✅ 구현 |
 | 5 | 2015 | ResNet-18/50 | Skip Connection, Degradation 해결 | ⬜ |
 
 ## 구조
@@ -27,8 +27,8 @@ src/dl_history/
 └── models/
     ├── mlp_numpy.py # Phase 1: 순수 NumPy MLP + 수동 역전파
     ├── lenet5.py    # Phase 2: LeNet-5
-    ├── alexnet.py   # Phase 3 (스텁)
-    ├── vgg.py       # Phase 4 (스텁)
+    ├── alexnet.py   # Phase 3: AlexNet
+    ├── vgg.py       # Phase 4: VGG-11/16
     └── resnet.py    # Phase 5 (스텁)
 notebooks/           # 단계별 실험 노트북
 scripts/run_phase1.py  # CLI 재현 엔트리
@@ -42,8 +42,17 @@ uv sync                                      # 의존성 설치
 uv run python -m pytest                       # gradient check 유닛테스트
 uv run python scripts/run_phase1.py          # Phase 1 실험 → results/*.png
 uv run python scripts/run_phase2.py          # Phase 2 실험 → results/*.png
+uv run python scripts/run_phase3.py          # Phase 3 실험 → results/*.png
+uv run python scripts/run_phase4.py          # Phase 4 실험 → results/*.png
 uv run jupyter lab notebooks/                # 노트북 열기
 ```
+
+## 개념 설명 문서
+
+| 문서 | 내용 |
+|------|------|
+| [phase1_math_explain.md](phase1_math_explain.md) | Phase 1의 수학적 근거 (연쇄법칙, 기울기 소실, 수치 미분 검증) |
+| [phase3_easy_explain.md](phase3_easy_explain.md) | Phase 3를 수식·코드 없이 비유와 예시로 설명 (ReLU, MaxPool, Dropout, Augmentation) |
 
 ## Phase 1 실험 요약
 
@@ -59,6 +68,33 @@ uv run jupyter lab notebooks/                # 노트북 열기
 - **Exp B**: LeNet-5(~62k 파라미터) vs flat MLP 784-128-10(~102k 파라미터) —
   파라미터가 더 적은데도 Convolution의 공간 구조 보존으로 더 높은 정확도
 - 데이터 표준화(전체 train 통계)는 Phase 1과 동일하게 `data.py`의 loader에 적용
+
+## Phase 3 실험 요약
+
+AlexNet(약 770만 파라미터, 28×28 입력에 맞게 축소) · SGD lr=0.01, momentum=0.9, 15 epoch
+
+- **Exp A (Dropout on/off)**: dropout=0.5가 train−val gap을 0.0357 → 0.0242로 줄이고
+  검증 정확도도 0.9178 → 0.9245로 높임. Dropout이 없으면 train이 더 빨리
+  과적합 방향으로 가지만 검증 성능은 뒤처진다.
+- **Exp B (Data Augmentation on/off)**: RandomCrop(pad=4) + Flip을 적용하니
+  검증 정확도가 0.9245 → 0.9080으로 **오히려 하락**. 28×28 이미지에 pad=4 crop은
+  변형이 커서, 15 epoch로는 증강된 분포에 충분히 수렴하지 못한 것으로 해석된다
+  (증강은 학습 난이도를 높이므로 epoch를 늘리면 재검토 필요).
+- Dropout은 PyTorch의 inverted dropout이라 평가 시 rescaling이 불필요함을
+  `tests/test_alexnet.py`에서 직접 검증.
+
+## Phase 4 실험 요약
+
+VGG-11(입력 28→32 zero padding, classifier 512) · SGD lr=0.01, momentum=0.9, 8 epoch
+
+> ⚠️ 실험 실행이 중단되어 `results/phase4_*.png`와 `phase4_summary.json`은 아직
+> 생성되지 않았다. `uv run python scripts/run_phase4.py`로 재생성한다.
+> 아래 Exp A는 중단 전까지 측정된 값이다.
+
+- **Exp A (3×3 중첩 vs 5×5 하나)**: 같은 receptive field에서 3×3 두 개(VGG-11)가
+  파라미터 9.76M에 검증 정확도 **0.9195**, 5×5 하나(VGG-11 wide)가 11.39M에 **0.9155** —
+  더 적은 파라미터로 더 높은 정확도. VGG 논문의 "3×3 중첩" 주장을 재현.
+- **Exp B (BatchNorm / 초기화)**: ⏳ 미완료 — 재실행 필요.
 
 ---
 
@@ -150,11 +186,12 @@ uv run jupyter lab notebooks/                # 노트북 열기
 [Phase 2] LeNet-5 (1998)                          ✅ 구현 완료 (2026-10-10)
    └── Spatial Feature 추출과 ReLU/Pooling의 효과
 
-[Phase 3] AlexNet (2012)
-   └── Dropout & Data Augmentation을 통한 Overfitting 해결
+[Phase 3] AlexNet (2012)                          ✅ 구현 완료 (2026-10-11)
+   └── Dropout으로 Overfitting 완화 (Data Augmentation은 epoch 부족으로 재검토)
 
-[Phase 4] VGGNet (2014)
+[Phase 4] VGGNet (2014)                      ✅ 구현 완료 (2026-10-11)
    └── 3x3 Convolution 중첩과 Batch Normalization의 영향
+       (실험 결과는 재실행 필요)
 
 [Phase 5] ResNet (2015)
    └── Skip Connection 구현 및 Deep Network Degradation 해결

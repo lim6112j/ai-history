@@ -55,10 +55,53 @@ def load_fashion_mnist_numpy() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.n
     return x_train, y_train, x_test, y_test
 
 
+# Geometric augmentation for the Phase 3 experiment: shift by up to
+# AUGMENT_PADDING pixels and mirror. Applied to the train split only.
+AUGMENT_PADDING = 4
+
+
+def train_transform(augment: bool = False):
+    """Train-split transform pipeline.
+
+    With ``augment=True`` a random 4-pixel-padded crop and a horizontal flip
+    are inserted between ``ToTensor`` and ``Normalize`` (geometric ops on the
+    raw [0, 1] image, normalization last). The eval/test pipeline is always
+    deterministic.
+    """
+    from torchvision import transforms
+
+    steps = [transforms.ToTensor()]
+    if augment:
+        steps += [
+            transforms.RandomCrop(IMAGE_SIZE, padding=AUGMENT_PADDING),
+            transforms.RandomHorizontalFlip(),
+        ]
+    steps.append(transforms.Normalize((FASHION_MEAN,), (FASHION_STD,)))
+    return transforms.Compose(steps)
+
+
+def eval_transform():
+    """Deterministic test-split transform pipeline (no augmentation)."""
+    from torchvision import transforms
+
+    return transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((FASHION_MEAN,), (FASHION_STD,)),
+        ]
+    )
+
+
 def load_fashion_mnist_loaders(
-    batch_size: int = 128, num_workers: int = 0
+    batch_size: int = 128, num_workers: int = 0, augment: bool = False
 ) -> tuple["torch.utils.data.DataLoader", "torch.utils.data.DataLoader"]:
     """Load Fashion-MNIST as train/test DataLoaders for Phase 2+.
+
+    Args:
+        batch_size: Mini-batch size for both splits.
+        num_workers: DataLoader worker processes.
+        augment: Apply random crop + flip to the train split (Phase 3). The
+            test split is never augmented.
 
     Returns:
         (train_loader, test_loader) yielding float32 images shaped
@@ -66,19 +109,12 @@ def load_fashion_mnist_loaders(
         int64 labels.
     """
     import torchvision
-    from torchvision import transforms
 
-    transform = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Normalize((FASHION_MEAN,), (FASHION_STD,)),
-        ]
-    )
     train_set = torchvision.datasets.FashionMNIST(
-        root=DATA_ROOT, train=True, download=True, transform=transform
+        root=DATA_ROOT, train=True, download=True, transform=train_transform(augment)
     )
     test_set = torchvision.datasets.FashionMNIST(
-        root=DATA_ROOT, train=False, download=True, transform=transform
+        root=DATA_ROOT, train=False, download=True, transform=eval_transform()
     )
 
     train_loader = torch_data_loader(train_set, batch_size, num_workers, shuffle=True)
